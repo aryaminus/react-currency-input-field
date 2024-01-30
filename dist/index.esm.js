@@ -59,7 +59,7 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
  * See: https://stackoverflow.com/questions/17885855/use-dynamic-variable-string-as-regex-pattern-in-javascript
  */
 var escapeRegExp = function (stringToGoIntoTheRegex) {
-    return stringToGoIntoTheRegex.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    return stringToGoIntoTheRegex.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 };
 
 var abbrMap = { k: 1000, m: 1000000, b: 1000000000 };
@@ -401,12 +401,13 @@ var CurrencyInput = forwardRef(function (_a, ref) {
         prefix: prefix || localeConfig.prefix,
         transformRawValue: transformRawValue,
     };
-    var formattedStateValue = defaultValue !== undefined && defaultValue !== null
-        ? formatValue(__assign(__assign({}, formatValueOptions), { decimalScale: decimalScale, value: String(defaultValue) }))
-        : userValue !== undefined && userValue !== null
-            ? formatValue(__assign(__assign({}, formatValueOptions), { decimalScale: decimalScale, value: String(userValue) }))
-            : '';
-    var _g = useState(formattedStateValue), stateValue = _g[0], setStateValue = _g[1];
+    var _g = useState(function () {
+        return defaultValue != null
+            ? formatValue(__assign(__assign({}, formatValueOptions), { decimalScale: decimalScale, value: String(defaultValue) }))
+            : userValue != null
+                ? formatValue(__assign(__assign({}, formatValueOptions), { decimalScale: decimalScale, value: String(userValue) }))
+                : '';
+    }), stateValue = _g[0], setStateValue = _g[1];
     var _h = useState(false), dirty = _h[0], setDirty = _h[1];
     var _j = useState(0), cursor = _j[0], setCursor = _j[1];
     var _k = useState(0), changeCount = _k[0], setChangeCount = _k[1];
@@ -441,7 +442,7 @@ var CurrencyInput = forwardRef(function (_a, ref) {
             : stringValue;
         var numberValue = parseFloat(stringValueWithoutSeparator);
         var formattedValue = formatValue(__assign({ value: stringValue }, formatValueOptions));
-        if (cursorPosition !== undefined && cursorPosition !== null) {
+        if (cursorPosition != null) {
             // Prevent cursor jumping
             var newCursor = cursorPosition + (formattedValue.length - value.length);
             newCursor = newCursor <= 0 ? (prefix ? prefix.length : 0) : newCursor;
@@ -511,14 +512,14 @@ var CurrencyInput = forwardRef(function (_a, ref) {
         if (step && (key === 'ArrowUp' || key === 'ArrowDown')) {
             event.preventDefault();
             setCursor(stateValue.length);
-            var currentValue = parseFloat(userValue !== undefined && userValue !== null
+            var currentValue = parseFloat(userValue != null
                 ? String(userValue).replace(decimalSeparator, '.')
                 : cleanValue(__assign({ value: stateValue }, cleanValueOptions))) || 0;
             var newValue = key === 'ArrowUp' ? currentValue + step : currentValue - step;
-            if (min !== undefined && newValue < min) {
+            if (min !== undefined && newValue < Number(min)) {
                 return;
             }
-            if (max !== undefined && newValue > max) {
+            if (max !== undefined && newValue > Number(max)) {
                 return;
             }
             var fixedLength = String(step).includes('.')
@@ -547,6 +548,12 @@ var CurrencyInput = forwardRef(function (_a, ref) {
         }
         onKeyUp && onKeyUp(event);
     };
+    // Update state if userValue changes to undefined
+    useEffect(function () {
+        if (userValue == null && defaultValue == null) {
+            setStateValue('');
+        }
+    }, [defaultValue, userValue]);
     useEffect(function () {
         // prevent cursor jumping if editing value
         if (dirty &&
@@ -561,8 +568,7 @@ var CurrencyInput = forwardRef(function (_a, ref) {
      * keep the char to allow them to enter next value
      */
     var getRenderValue = function () {
-        if (userValue !== undefined &&
-            userValue !== null &&
+        if (userValue != null &&
             stateValue !== '-' &&
             (!decimalSeparator || stateValue !== decimalSeparator)) {
             return formatValue(__assign(__assign({}, formatValueOptions), { decimalScale: dirty ? undefined : decimalScale, value: String(userValue) }));
